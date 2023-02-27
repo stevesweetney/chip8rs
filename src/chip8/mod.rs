@@ -46,7 +46,7 @@ impl VirtualMachine {
         if !self.blocked_on_key_press {
             let opcode = self.fetch_opcode();
             self.execute_opcode(opcode);
-            
+
             self.sound_timer = self.sound_timer.saturating_sub(1);
             self.delay_timer = self.delay_timer.saturating_sub(1);
         }
@@ -137,6 +137,64 @@ impl VirtualMachine {
                 self.registers[register_x] = self.registers[register_x].saturating_add(value);
                 self.program_counter += 2;
             }
+            0x9000 => {
+                // 9XY0
+                let register_x = Self::get_register_x(opcode);
+                let register_y = Self::get_register_y(opcode);
+
+                if self.registers[register_x] != self.registers[register_y] {
+                    self.program_counter += 4
+                } else {
+                    self.program_counter += 2;
+                }
+            }
+            0xA000 => {
+                // ANNN
+                let address = opcode & 0x0FFF;
+                self.index_register = address;
+            }
+            0xB000 => {
+                // BNNN
+                let address = opcode & 0x0FFF;
+                let v0 = self.registers[0] as u16;
+                self.index_register = address + v0;
+            }
+            0xC000 => {
+                // CXNN
+                let register_x = Self::get_register_x(opcode);
+                let random_byte = fastrand::u8(..);
+
+                self.registers[register_x] = random_byte & ((opcode & 0x00FF) as u8);
+            }
+            0xD000 => {
+                // DXYN
+                todo!()
+            }
+            0xE000 => match opcode & 0x00FF {
+                0x009E => {
+                    // EX9E
+                    let register_x = Self::get_register_x(opcode);
+                    let vx = self.registers[register_x];
+
+                    if self.key_state[vx as usize] {
+                        self.program_counter += 4;
+                    } else {
+                        self.program_counter += 2;
+                    }
+                }
+                0x00A1 => {
+                    // EXA1
+                    let register_x = Self::get_register_x(opcode);
+                    let vx = self.registers[register_x];
+
+                    if !self.key_state[vx as usize] {
+                        self.program_counter += 4;
+                    } else {
+                        self.program_counter += 2;
+                    }
+                }
+                _ => panic!("Unknown opcode: {:X}", opcode),
+            },
             0xF000 => match opcode & 0x000F {
                 0x0007 => {
                     // FX07
@@ -242,5 +300,4 @@ impl VirtualMachine {
     fn get_register_y(opcode: u16) -> usize {
         ((opcode & 0x0F0) >> 4) as usize
     }
-
 }
