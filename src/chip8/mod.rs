@@ -60,6 +60,8 @@ impl VirtualMachine {
                     // 00EE
                     self.program_counter = self.stack[self.stack_pointer as usize - 1];
                     self.stack_pointer -= 1;
+
+                    self.program_counter += 2;
                 }
                 _ => panic!("Unknown opcode: {:X}", opcode),
             },
