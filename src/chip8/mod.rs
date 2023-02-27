@@ -1,6 +1,6 @@
 mod font;
 
-struct VirtualMachine {
+pub struct VirtualMachine {
     memory: [u8; 4096],
     registers: [u8; 16],
     stack: [u16; 16],
@@ -10,12 +10,12 @@ struct VirtualMachine {
     program_counter: u16,
     delay_timer: u8,
     sound_timer: u8,
-    key_state: [bool; 16],
+    pub key_state: [bool; 16],
     blocked_on_key_press: bool,
 }
 
 impl VirtualMachine {
-    fn new() -> VirtualMachine {
+    pub fn new() -> VirtualMachine {
         let mut memory = [0; 4096];
 
         for (i, &byte) in font::FONTSET.iter().enumerate() {
@@ -39,6 +39,13 @@ impl VirtualMachine {
     fn load_rom(&mut self, rom: &[u8]) {
         for (i, &byte) in rom.iter().enumerate() {
             self.memory[i + 0x200] = byte;
+        }
+    }
+
+    pub fn run_cyle(&mut self) {
+        if !self.blocked_on_key_press {
+            let opcode = self.fetch_opcode();
+            self.execute_opcode(opcode);
         }
     }
 
@@ -80,7 +87,7 @@ impl VirtualMachine {
             }
             0x3000 => {
                 // 3XNN
-                let register_idx = ((opcode & 0x0F00) >> 8) as usize;
+                let register_idx = Self::get_register_x(opcode);
                 let value = (opcode & 0x00FF) as u8;
 
                 if self.registers[register_idx] == value {
@@ -91,7 +98,7 @@ impl VirtualMachine {
             }
             0x4000 => {
                 // 4XNN
-                let register_x = ((opcode & 0x0F00) >> 8) as usize;
+                let register_x = Self::get_register_x(opcode);
                 let value = (opcode & 0x00FF) as u8;
 
                 if self.registers[register_x] != value {
@@ -102,8 +109,8 @@ impl VirtualMachine {
             }
             0x5000 => {
                 // 5XY0
-                let register_x = ((opcode & 0x0F00) >> 8) as usize;
-                let register_y = ((opcode & 0x00F0) >> 4) as usize;
+                let register_x = Self::get_register_x(opcode);
+                let register_y = Self::get_register_y(opcode);
 
                 if self.registers[register_x] == self.registers[register_y] {
                     self.program_counter += 4;
@@ -113,7 +120,7 @@ impl VirtualMachine {
             }
             0x6000 => {
                 // 6XNN
-                let register_x = ((opcode & 0x0F00) >> 8) as usize;
+                let register_x = Self::get_register_x(opcode);
                 let value = (opcode & 0x00FF) as u8;
 
                 self.registers[register_x] = value;
@@ -121,7 +128,7 @@ impl VirtualMachine {
             }
             0x7000 => {
                 // 7XNN
-                let register_x = ((opcode & 0x0F00) >> 8) as usize;
+                let register_x = Self::get_register_x(opcode);
                 let value = (opcode & 0x00FF) as u8;
 
                 self.registers[register_x] = self.registers[register_x].saturating_add(value);
@@ -130,7 +137,7 @@ impl VirtualMachine {
             0xF000 => match opcode & 0x000F {
                 0x0007 => {
                     // FX07
-                    let register_x = ((opcode & 0x0F00) >> 8) as usize;
+                    let register_x = Self::get_register_x(opcode);
                     self.registers[register_x] = self.delay_timer;
 
                     self.program_counter += 2;
@@ -142,14 +149,14 @@ impl VirtualMachine {
                 0x0005 => match opcode & 0x00F0 {
                     0x0010 => {
                         // FX15
-                        let register_x = ((opcode & 0x0F00) >> 8) as usize;
+                        let register_x = Self::get_register_x(opcode);
                         self.delay_timer = self.registers[register_x];
 
                         self.program_counter += 2;
                     }
                     0x0050 => {
                         // FX55
-                        let register_x = ((opcode & 0x0F00) >> 8) as usize;
+                        let register_x = Self::get_register_x(opcode);
                         let i = self.index_register as usize;
                         for (idx, mem) in self.memory[i..=(i + register_x)].iter_mut().enumerate() {
                             *mem = self.registers[idx];
@@ -159,7 +166,7 @@ impl VirtualMachine {
                     }
                     0x0060 => {
                         // FX65
-                        let register_x = ((opcode & 0x0F00) >> 8) as usize;
+                        let register_x = Self::get_register_x(opcode);
                         let i = self.index_register as usize;
                         for (idx, mem) in self.memory[i..=(i + register_x)].iter().enumerate() {
                             self.registers[idx] = *mem;
@@ -171,21 +178,21 @@ impl VirtualMachine {
                 },
                 0x0008 => {
                     // FX18
-                    let register_x = ((opcode & 0x0F00) >> 8) as usize;
+                    let register_x = Self::get_register_x(opcode);
                     self.sound_timer = self.registers[register_x];
 
                     self.program_counter += 2;
                 }
                 0x000E => {
                     // FX1E
-                    let register_x = ((opcode & 0x0F00) >> 8) as usize;
+                    let register_x = Self::get_register_x(opcode);
                     self.index_register += self.registers[register_x] as u16;
 
                     self.program_counter += 2;
                 }
                 0x0009 => {
                     // FX29
-                    let register_x = ((opcode & 0x0F00) >> 8) as usize;
+                    let register_x = Self::get_register_x(opcode);
                     self.index_register =
                         Self::get_sprite_address(self.registers[register_x]) as u16;
 
@@ -193,7 +200,7 @@ impl VirtualMachine {
                 }
                 0x0003 => {
                     // FX33
-                    let register_x = ((opcode & 0x0F00) >> 8) as usize;
+                    let register_x = Self::get_register_x(opcode);
                     let val = self.registers[register_x];
                     let i = self.index_register as usize;
 
@@ -215,13 +222,22 @@ impl VirtualMachine {
         sprite_id * 5
     }
 
-    fn complete_fx0a(&mut self, key_value: u8) {
+    pub fn complete_fx0a(&mut self, key_value: u8) {
         let opcode = self.fetch_opcode();
-        let register_x = ((opcode & 0x0F00) >> 8) as usize;
+        let register_x = Self::get_register_x(opcode);
 
         self.registers[register_x] = key_value;
 
         self.blocked_on_key_press = false;
         self.program_counter += 2;
     }
+
+    fn get_register_x(opcode: u16) -> usize {
+        ((opcode & 0x0F00) >> 8) as usize
+    }
+
+    fn get_register_y(opcode: u16) -> usize {
+        ((opcode & 0x0F0) >> 4) as usize
+    }
+
 }
