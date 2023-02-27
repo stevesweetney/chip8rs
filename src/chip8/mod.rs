@@ -46,6 +46,9 @@ impl VirtualMachine {
         if !self.blocked_on_key_press {
             let opcode = self.fetch_opcode();
             self.execute_opcode(opcode);
+            
+            self.sound_timer = self.sound_timer.saturating_sub(1);
+            self.delay_timer = self.delay_timer.saturating_sub(1);
         }
     }
 
