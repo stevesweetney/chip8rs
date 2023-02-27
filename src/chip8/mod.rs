@@ -1,5 +1,4 @@
 mod font;
-mod util;
 
 struct VirtualMachine {
     memory: [u8; 4096],
@@ -11,6 +10,8 @@ struct VirtualMachine {
     program_counter: u16,
     delay_timer: u8,
     sound_timer: u8,
+    key_state: [bool; 16],
+    blocked_on_key_press: bool,
 }
 
 impl VirtualMachine {
@@ -30,6 +31,8 @@ impl VirtualMachine {
             program_counter: 0x200,
             delay_timer: 0,
             sound_timer: 0,
+            key_state: [false; 16],
+            blocked_on_key_press: false,
         }
     }
 
@@ -122,7 +125,101 @@ impl VirtualMachine {
                 self.registers[register_x] = self.registers[register_x].saturating_add(value);
                 self.program_counter += 2;
             }
+            0xF000 => match opcode & 0x000F {
+                0x0007 => {
+                    // FX07
+                    let register_x = ((opcode & 0x0F00) >> 8) as usize;
+                    self.registers[register_x] = self.delay_timer;
+
+                    self.program_counter += 2;
+                }
+                0x000A => {
+                    // FX0A
+                    self.blocked_on_key_press = true;
+                }
+                0x0005 => match opcode & 0x00F0 {
+                    0x0010 => {
+                        // FX15
+                        let register_x = ((opcode & 0x0F00) >> 8) as usize;
+                        self.delay_timer = self.registers[register_x];
+
+                        self.program_counter += 2;
+                    }
+                    0x0050 => {
+                        // FX55
+                        let register_x = ((opcode & 0x0F00) >> 8) as usize;
+                        let i = self.index_register as usize;
+                        for (idx, mem) in self.memory[i..=(i + register_x)].iter_mut().enumerate() {
+                            *mem = self.registers[idx];
+                        }
+
+                        self.program_counter += 2;
+                    }
+                    0x0060 => {
+                        // FX65
+                        let register_x = ((opcode & 0x0F00) >> 8) as usize;
+                        let i = self.index_register as usize;
+                        for (idx, mem) in self.memory[i..=(i + register_x)].iter().enumerate() {
+                            self.registers[idx] = *mem;
+                        }
+
+                        self.program_counter += 2;
+                    }
+                    _ => panic!("Unknown opcode: {:X}", opcode),
+                },
+                0x0008 => {
+                    // FX18
+                    let register_x = ((opcode & 0x0F00) >> 8) as usize;
+                    self.sound_timer = self.registers[register_x];
+
+                    self.program_counter += 2;
+                }
+                0x000E => {
+                    // FX1E
+                    let register_x = ((opcode & 0x0F00) >> 8) as usize;
+                    self.index_register += self.registers[register_x] as u16;
+
+                    self.program_counter += 2;
+                }
+                0x0009 => {
+                    // FX29
+                    let register_x = ((opcode & 0x0F00) >> 8) as usize;
+                    self.index_register =
+                        Self::get_sprite_address(self.registers[register_x]) as u16;
+
+                    self.program_counter += 2;
+                }
+                0x0003 => {
+                    // FX33
+                    let register_x = ((opcode & 0x0F00) >> 8) as usize;
+                    let val = self.registers[register_x];
+                    let i = self.index_register as usize;
+
+                    self.memory[i] = val / 100;
+                    self.memory[i] = (val / 10) % 10;
+                    self.memory[i + 2] = val % 10;
+
+                    self.program_counter += 2;
+                }
+                _ => panic!("Unknown opcode: {:X}", opcode),
+            },
             _ => panic!("Unknown opcode: {:X}", opcode),
         }
+    }
+
+    fn get_sprite_address(sprite_id: u8) -> u8 {
+        assert!(sprite_id <= 0x0F);
+
+        sprite_id * 5
+    }
+
+    fn complete_fx0a(&mut self, key_value: u8) {
+        let opcode = self.fetch_opcode();
+        let register_x = ((opcode & 0x0F00) >> 8) as usize;
+
+        self.registers[register_x] = key_value;
+
+        self.blocked_on_key_press = false;
+        self.program_counter += 2;
     }
 }
