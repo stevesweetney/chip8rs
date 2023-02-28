@@ -14,7 +14,7 @@ pub struct VirtualMachine {
     delay_timer: u8,
     sound_timer: u8,
     pub key_state: [bool; 16],
-    blocked_on_key_press: bool,
+    pub blocked_on_key_press: bool,
 }
 
 impl VirtualMachine {
@@ -39,7 +39,7 @@ impl VirtualMachine {
         }
     }
 
-    fn load_rom(&mut self, rom: &[u8]) {
+    pub fn load_rom(&mut self, rom: &[u8]) {
         for (i, &byte) in rom.iter().enumerate() {
             self.memory[i + 0x200] = byte;
         }
@@ -416,6 +416,9 @@ impl VirtualMachine {
 
         self.blocked_on_key_press = false;
         self.program_counter += 2;
+
+        self.sound_timer = self.sound_timer.saturating_sub(1);
+        self.delay_timer = self.delay_timer.saturating_sub(1);
     }
 
     fn get_register_x(opcode: u16) -> usize {
