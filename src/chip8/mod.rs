@@ -1,11 +1,14 @@
 mod font;
 
+const SCREEN_WIDTH: usize = 64;
+const SCREEN_HEIGHT: usize = 32;
+
 pub struct VirtualMachine {
     memory: [u8; 4096],
     registers: [u8; 16],
     stack: [u16; 16],
     stack_pointer: u8,
-    screen: [u8; 64 * 32],
+    screen: [u8; SCREEN_HEIGHT * SCREEN_WIDTH],
     index_register: u16,
     program_counter: u16,
     delay_timer: u8,
@@ -26,7 +29,7 @@ impl VirtualMachine {
             registers: [0; 16],
             stack: [0; 16],
             stack_pointer: 0,
-            screen: [0; 64 * 32],
+            screen: [0; SCREEN_HEIGHT * SCREEN_WIDTH],
             index_register: 0,
             program_counter: 0x200,
             delay_timer: 0,
@@ -168,7 +171,32 @@ impl VirtualMachine {
             }
             0xD000 => {
                 // DXYN
-                todo!()
+                let vx = self.registers[Self::get_register_x(opcode)] as usize;
+                let vy = self.registers[Self::get_register_y(opcode)] as usize;
+                let height = opcode & 0x000F;
+
+                self.registers[0xF] = 0;
+
+                for y in 0..height {
+                    let byte = self.memory[(self.index_register + y) as usize];
+                    let row = vy + y as usize;
+
+                    for (x, col) in (vx..=(vx + 8)).enumerate() {
+                        let col = col % SCREEN_WIDTH;
+                        let pixel = self.get_pixel_mut(row, col);
+                        let sprite_value = byte & (0x80 >> x);
+
+                        let old_pixel = *pixel;
+
+                        *pixel ^= sprite_value;
+
+                        if old_pixel == 1 && *pixel == 0 {
+                            self.registers[0xF] = 1;
+                        }
+                    }
+                }
+
+                self.program_counter += 2;
             }
             0xE000 => match opcode & 0x00FF {
                 0x009E => {
@@ -299,5 +327,9 @@ impl VirtualMachine {
 
     fn get_register_y(opcode: u16) -> usize {
         ((opcode & 0x0F0) >> 4) as usize
+    }
+
+    fn get_pixel_mut(&mut self, row: usize, col: usize) -> &mut u8 {
+        &mut self.screen[row * SCREEN_WIDTH + col]
     }
 }
