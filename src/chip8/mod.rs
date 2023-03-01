@@ -1,7 +1,7 @@
 mod font;
 
-const SCREEN_WIDTH: usize = 64;
-const SCREEN_HEIGHT: usize = 32;
+pub const SCREEN_WIDTH: usize = 64;
+pub const SCREEN_HEIGHT: usize = 32;
 
 pub struct VirtualMachine {
     memory: [u8; 4096],
@@ -252,12 +252,16 @@ impl VirtualMachine {
                 // ANNN
                 let address = opcode & 0x0FFF;
                 self.index_register = address;
+
+                self.program_counter += 2;
             }
             0xB000 => {
                 // BNNN
                 let address = opcode & 0x0FFF;
                 let v0 = self.registers[0] as u16;
                 self.index_register = address + v0;
+
+                self.program_counter += 2;
             }
             0xC000 => {
                 // CXNN
@@ -265,6 +269,8 @@ impl VirtualMachine {
                 let random_byte = fastrand::u8(..);
 
                 self.registers[register_x] = random_byte & ((opcode & 0x00FF) as u8);
+
+                self.program_counter += 2;
             }
             0xD000 => {
                 // DXYN
@@ -276,19 +282,21 @@ impl VirtualMachine {
 
                 for y in 0..height {
                     let byte = self.memory[(self.index_register + y) as usize];
-                    let row = vy + y as usize;
+                    let row = (vy + y as usize) % SCREEN_HEIGHT as usize;
 
-                    for (x, col) in (vx..=(vx + 8)).enumerate() {
+                    for (x, col) in (vx..(vx + 8)).enumerate() {
                         let col = col % SCREEN_WIDTH;
                         let pixel = self.get_pixel_mut(row, col);
                         let sprite_value = byte & (0x80 >> x);
 
                         let old_pixel = *pixel;
 
-                        *pixel ^= sprite_value;
+                        if sprite_value != 0 {
+                            *pixel ^= 1;
 
-                        if old_pixel == 1 && *pixel == 0 {
-                            self.registers[0xF] = 1;
+                            if old_pixel == 1 && *pixel == 0 {
+                                self.registers[0xF] = 1;
+                            }
                         }
                     }
                 }
@@ -431,5 +439,9 @@ impl VirtualMachine {
 
     fn get_pixel_mut(&mut self, row: usize, col: usize) -> &mut u8 {
         &mut self.screen[row * SCREEN_WIDTH + col]
+    }
+
+    pub fn screen_rows(&self) -> impl Iterator<Item = &[u8]> {
+        self.screen.chunks_exact(SCREEN_WIDTH)
     }
 }
