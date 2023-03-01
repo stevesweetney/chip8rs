@@ -1,11 +1,14 @@
 use ggez::*;
 use input_mapping::KeyValue;
-use std::time::{Duration, Instant};
 
 mod chip8;
 mod input_mapping;
 
-const MICROSECONDS_PER_FRAME: u64 = 16700;
+const SCALE_FACTOR: u32 = 24;
+const WINDOW_SIZE: (f32, f32) = (
+    (chip8::SCREEN_WIDTH as f32) * SCALE_FACTOR as f32,
+    (chip8::SCREEN_HEIGHT as f32) * SCALE_FACTOR as f32,
+);
 
 struct State {
     vm: chip8::VirtualMachine,
@@ -13,7 +16,7 @@ struct State {
 
 impl State {
     fn new() -> Self {
-        let rom = include_bytes!("../roms/c8_test.c8");
+        let rom = include_bytes!("../roms/RPS.ch8");
         let mut vm = chip8::VirtualMachine::new();
         vm.load_rom(rom);
         Self { vm }
@@ -40,19 +43,40 @@ impl State {
 }
 
 impl ggez::event::EventHandler<GameError> for State {
-    fn update(&mut self, _ctx: &mut Context) -> Result<(), GameError> {
-        let start = Instant::now();
+    fn update(&mut self, ctx: &mut Context) -> Result<(), GameError> {
+        while ctx.time.check_update_time(60) {
+            self.vm.run_cyle();
+        }
 
-        self.vm.run_cyle();
-
-        let elapsed = Instant::now().duration_since(start);
-        let frame_duration = Duration::from_micros(MICROSECONDS_PER_FRAME);
-        timer::sleep(frame_duration.saturating_sub(elapsed));
         Ok(())
     }
 
-    fn draw(&mut self, _ctx: &mut Context) -> Result<(), GameError> {
-        todo!()
+    fn draw(&mut self, ctx: &mut Context) -> Result<(), GameError> {
+        let mut canvas = graphics::Canvas::from_frame(ctx, graphics::Color::BLACK);
+
+        for (y, row) in self.vm.screen_rows().enumerate() {
+            for (x, _) in row.iter().enumerate().filter(|(_, p)| **p != 0) {
+                let rect = graphics::Rect::new_i32(
+                    x as i32 * SCALE_FACTOR as i32,
+                    y as i32 * SCALE_FACTOR as i32,
+                    SCALE_FACTOR as i32,
+                    SCALE_FACTOR as i32,
+                );
+
+                canvas.draw(
+                    &graphics::Quad,
+                    graphics::DrawParam::new()
+                        .dest_rect(rect)
+                        .color(graphics::Color::WHITE),
+                );
+            }
+        }
+
+        canvas.finish(ctx)?;
+
+        ggez::timer::yield_now();
+
+        Ok(())
     }
 
     fn key_down_event(
@@ -76,7 +100,8 @@ impl ggez::event::EventHandler<GameError> for State {
 fn main() {
     let state = State::new();
 
-    let c = conf::Conf::new();
+    let c = conf::Conf::new()
+        .window_mode(conf::WindowMode::default().dimensions(WINDOW_SIZE.0, WINDOW_SIZE.1));
     let (ctx, event_loop) = ContextBuilder::new("chip8", "Steve S.")
         .default_conf(c)
         .build()
