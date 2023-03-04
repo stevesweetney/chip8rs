@@ -15,6 +15,7 @@ pub struct VirtualMachine {
     sound_timer: u8,
     pub key_state: [bool; 16],
     pub blocked_on_key_press: bool,
+    pub draw_cycle: bool,
 }
 
 impl VirtualMachine {
@@ -36,6 +37,7 @@ impl VirtualMachine {
             sound_timer: 0,
             key_state: [false; 16],
             blocked_on_key_press: false,
+            draw_cycle: false,
         }
     }
 
@@ -48,6 +50,8 @@ impl VirtualMachine {
     pub fn run_cyle(&mut self) {
         if !self.blocked_on_key_press {
             let opcode = self.fetch_opcode();
+
+            self.draw_cycle = false;
             self.execute_opcode(opcode);
 
             self.sound_timer = self.sound_timer.saturating_sub(1);
@@ -68,6 +72,8 @@ impl VirtualMachine {
                     // 00E0: Clear display
                     self.screen.iter_mut().for_each(|x| *x = 0);
                     self.program_counter += 2;
+
+                    self.draw_cycle = true;
                 }
                 0x000E => {
                     // 00EE
@@ -302,6 +308,7 @@ impl VirtualMachine {
                 }
 
                 self.program_counter += 2;
+                self.draw_cycle = true;
             }
             0xE000 => match opcode & 0x00FF {
                 0x009E => {
@@ -424,9 +431,6 @@ impl VirtualMachine {
 
         self.blocked_on_key_press = false;
         self.program_counter += 2;
-
-        self.sound_timer = self.sound_timer.saturating_sub(1);
-        self.delay_timer = self.delay_timer.saturating_sub(1);
     }
 
     fn get_register_x(opcode: u16) -> usize {

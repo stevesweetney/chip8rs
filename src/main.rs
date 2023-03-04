@@ -29,12 +29,16 @@ impl State {
     ) -> Result<(), GameError> {
         if let Some(keycode) = input.keycode {
             let value_result: Result<KeyValue, _> = keycode.try_into();
-            let key_value = value_result.map_err(error::GameError::CustomError)?;
 
-            self.vm.key_state[key_value.0 as usize] = is_down;
+            match value_result {
+                Ok(key_value) => {
+                    self.vm.key_state[key_value.0 as usize] = is_down;
 
-            if is_down && self.vm.blocked_on_key_press {
-                self.vm.complete_fx0a(key_value.0);
+                    if is_down && self.vm.blocked_on_key_press {
+                        self.vm.complete_fx0a(key_value.0);
+                    }
+                }
+                Err(message) => eprintln!("Error: {}", message)
             }
         }
 
@@ -52,27 +56,29 @@ impl ggez::event::EventHandler<GameError> for State {
     }
 
     fn draw(&mut self, ctx: &mut Context) -> Result<(), GameError> {
-        let mut canvas = graphics::Canvas::from_frame(ctx, graphics::Color::BLACK);
+        if self.vm.draw_cycle {
+            let mut canvas = graphics::Canvas::from_frame(ctx, graphics::Color::BLACK);
 
-        for (y, row) in self.vm.screen_rows().enumerate() {
-            for (x, _) in row.iter().enumerate().filter(|(_, p)| **p != 0) {
-                let rect = graphics::Rect::new_i32(
-                    x as i32 * SCALE_FACTOR as i32,
-                    y as i32 * SCALE_FACTOR as i32,
-                    SCALE_FACTOR as i32,
-                    SCALE_FACTOR as i32,
-                );
+            for (y, row) in self.vm.screen_rows().enumerate() {
+                for (x, _) in row.iter().enumerate().filter(|(_, p)| **p != 0) {
+                    let rect = graphics::Rect::new_i32(
+                        x as i32 * SCALE_FACTOR as i32,
+                        y as i32 * SCALE_FACTOR as i32,
+                        SCALE_FACTOR as i32,
+                        SCALE_FACTOR as i32,
+                    );
 
-                canvas.draw(
-                    &graphics::Quad,
-                    graphics::DrawParam::new()
-                        .dest_rect(rect)
-                        .color(graphics::Color::WHITE),
-                );
+                    canvas.draw(
+                        &graphics::Quad,
+                        graphics::DrawParam::new()
+                            .dest_rect(rect)
+                            .color(graphics::Color::WHITE),
+                    );
+                }
             }
-        }
 
-        canvas.finish(ctx)?;
+            canvas.finish(ctx)?;
+        }
 
         ggez::timer::yield_now();
 
