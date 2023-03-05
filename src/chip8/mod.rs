@@ -144,7 +144,7 @@ impl VirtualMachine {
                 let register_x = Self::get_register_x(opcode);
                 let value = (opcode & 0x00FF) as u8;
 
-                self.registers[register_x] = self.registers[register_x].saturating_add(value);
+                self.registers[register_x] = self.registers[register_x].wrapping_add(value);
                 self.program_counter += 2;
             }
             0x8000 => match opcode & 0x000F {
@@ -181,14 +181,16 @@ impl VirtualMachine {
                 }
                 0x4 => {
                     // 8XY4
-                    self.registers[0xF] = 0;
                     let vx = self.registers[Self::get_register_x(opcode)];
                     let vy = self.registers[Self::get_register_y(opcode)];
                     let (sum, did_overflow) = vx.overflowing_add(vy);
 
                     if did_overflow {
                         self.registers[0xF] = 1;
+                    } else {
+                        self.registers[0xF] = 0;
                     }
+
                     self.registers[Self::get_register_x(opcode)] = sum;
 
                     self.program_counter += 2;
@@ -213,8 +215,8 @@ impl VirtualMachine {
                     // 8XY6
 
                     let vx = self.registers[Self::get_register_x(opcode)];
+                    self.registers[Self::get_register_x(opcode)] = vx.wrapping_shr(1);
                     self.registers[0xF] = vx & 1;
-                    self.registers[Self::get_register_x(opcode)] = vx >> 1;
 
                     self.program_counter += 2;
                 }
@@ -237,8 +239,8 @@ impl VirtualMachine {
                     // 8XYE
 
                     let vx = self.registers[Self::get_register_x(opcode)];
-                    self.registers[0xF] = vx & 0x80;
-                    self.registers[Self::get_register_x(opcode)] = vx << 1;
+                    self.registers[Self::get_register_x(opcode)] = vx.wrapping_shl(1);
+                    self.registers[0xF] = (vx >> 7) & 1;
 
                     self.program_counter += 2;
                 }
@@ -406,8 +408,10 @@ impl VirtualMachine {
                     let val = self.registers[register_x];
                     let i = self.index_register as usize;
 
+                    assert!(i + 2 <= self.memory.len());
+
                     self.memory[i] = val / 100;
-                    self.memory[i] = (val / 10) % 10;
+                    self.memory[i + 1] = (val / 10) % 10;
                     self.memory[i + 2] = val % 10;
 
                     self.program_counter += 2;
