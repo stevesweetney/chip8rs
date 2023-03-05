@@ -16,7 +16,7 @@ struct State {
 
 impl State {
     fn new() -> Self {
-        let rom = include_bytes!("../roms/RPS.ch8");
+        let rom = include_bytes!("../src/chip8/tests/chip8-test-suite.ch8");
         let mut vm = chip8::VirtualMachine::new();
         vm.load_rom(rom);
         Self { vm }
@@ -38,7 +38,7 @@ impl State {
                         self.vm.complete_fx0a(key_value.0);
                     }
                 }
-                Err(message) => eprintln!("Error: {}", message)
+                Err(message) => eprintln!("Error: {}", message),
             }
         }
 
