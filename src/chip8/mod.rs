@@ -285,16 +285,27 @@ impl VirtualMachine {
                 // DXYN
                 let vx = self.registers[Self::get_register_x(opcode)] as usize;
                 let vy = self.registers[Self::get_register_y(opcode)] as usize;
-                let height = opcode & 0x000F;
+                let height = (opcode & 0x000F) as usize;
 
                 self.registers[0xF] = 0;
 
-                for y in 0..height {
-                    let byte = self.memory[(self.index_register + y) as usize];
-                    let row = (vy + y as usize) % SCREEN_HEIGHT as usize;
+                let wrap = vx >= SCREEN_WIDTH || vy >= SCREEN_HEIGHT;
 
-                    for (x, col) in (vx..(vx + 8)).enumerate() {
-                        let col = col % SCREEN_WIDTH;
+                for (y, mut row) in (vy..(vy + height)).enumerate() {
+                    let byte = self.memory[self.index_register as usize + y];
+
+                    if wrap {
+                        row %= SCREEN_HEIGHT;
+                    } else if row >= SCREEN_HEIGHT {
+                        break;
+                    }
+
+                    for (x, mut col) in (vx..(vx + 8)).enumerate() {
+                        if wrap {
+                            col %= SCREEN_WIDTH
+                        } else if col >= SCREEN_WIDTH {
+                            break;
+                        }
                         let pixel = self.get_pixel_mut(row, col);
                         let sprite_value = byte & (0x80 >> x);
 
