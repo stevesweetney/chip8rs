@@ -54,10 +54,10 @@ impl VirtualMachine {
 
             self.draw_cycle = false;
             self.execute_opcode(opcode);
-
-            self.sound_timer = self.sound_timer.saturating_sub(1);
-            self.delay_timer = self.delay_timer.saturating_sub(1);
         }
+
+        self.sound_timer = self.sound_timer.saturating_sub(1);
+        self.delay_timer = self.delay_timer.saturating_sub(1);
     }
 
     fn fetch_opcode(&self) -> u16 {
@@ -360,6 +360,9 @@ impl VirtualMachine {
                 0x000A => {
                     // FX0A
                     self.blocked_on_key_press = true;
+                    self.clear_key_state();
+
+                    return;
                 }
                 0x0005 => match opcode & 0x00F0 {
                     0x0010 => {
@@ -463,5 +466,9 @@ impl VirtualMachine {
 
     pub fn screen_rows(&self) -> impl Iterator<Item = &[u8]> {
         self.screen.chunks_exact(SCREEN_WIDTH)
+    }
+
+    fn clear_key_state(&mut self) {
+        self.key_state.fill(false);
     }
 }

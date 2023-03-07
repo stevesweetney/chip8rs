@@ -32,11 +32,14 @@ impl State {
 
             match value_result {
                 Ok(key_value) => {
-                    self.vm.key_state[key_value.0 as usize] = is_down;
-
-                    if is_down && self.vm.blocked_on_key_press {
+                    if self.vm.blocked_on_key_press
+                        && self.vm.key_state[key_value.0 as usize]
+                        && !is_down
+                    {
                         self.vm.complete_fx0a(key_value.0);
                     }
+
+                    self.vm.key_state[key_value.0 as usize] = is_down;
                 }
                 Err(message) => eprintln!("Error: {}", message),
             }
