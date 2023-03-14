@@ -1,7 +1,6 @@
 use ggez::*;
 use input_mapping::KeyValue;
 
-mod chip8;
 mod input_mapping;
 
 const SCALE_FACTOR: u32 = 24;
@@ -19,7 +18,7 @@ struct State {
 
 impl State {
     fn new() -> Self {
-        let rom = include_bytes!("../src/chip8/tests/chip8-test-suite.ch8");
+        let rom = include_bytes!("./tests/chip8-test-suite.ch8");
         let mut vm = chip8::VirtualMachine::new();
         vm.load_rom(rom);
         Self { vm }
