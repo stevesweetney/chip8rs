@@ -46,7 +46,7 @@ impl VirtualMachine {
         }
     }
 
-    pub fn run_cyle(&mut self) {
+    pub fn execute_instruction(&mut self) {
         if !self.blocked_on_key_press {
             let opcode = self.fetch_opcode();
 

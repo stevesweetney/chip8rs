@@ -9,6 +9,9 @@ const WINDOW_SIZE: (f32, f32) = (
     (chip8::SCREEN_WIDTH as f32) * SCALE_FACTOR as f32,
     (chip8::SCREEN_HEIGHT as f32) * SCALE_FACTOR as f32,
 );
+const TARGET_FPS: u32 = 60;
+const INSTRUCTIONS_PER_SECOND: u32 = 700;
+const INSTRUCTIONS_PER_FRAME: u32 = INSTRUCTIONS_PER_SECOND / TARGET_FPS;
 
 struct State {
     vm: chip8::VirtualMachine,
@@ -51,8 +54,10 @@ impl State {
 
 impl ggez::event::EventHandler<GameError> for State {
     fn update(&mut self, ctx: &mut Context) -> Result<(), GameError> {
-        while ctx.time.check_update_time(60) {
-            self.vm.run_cyle();
+        while ctx.time.check_update_time(TARGET_FPS) {
+            for _ in 0..INSTRUCTIONS_PER_FRAME {
+                self.vm.execute_instruction();
+            }
             self.vm.decrement_timers();
         }
 
