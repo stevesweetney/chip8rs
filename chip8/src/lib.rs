@@ -39,11 +39,36 @@ impl VirtualMachine {
         }
     }
 
+    fn reset(&mut self) {
+        self.clear_key_state();
+        self.clear_memory();
+        self.clear_screen();
+        self.blocked_on_key_press = false;
+        self.delay_timer = 0;
+        self.sound_timer = 0;
+        self.program_counter = 0x200;
+        self.index_register = 0;
+        self.stack_pointer = 0;
+        self.stack.fill(0);
+        self.registers.fill(0);
+    }
+
     pub fn load_rom(&mut self, rom: &[u8]) {
+        self.reset();
+        
         let free_space = &mut self.memory[0x200..];
         for (byte, address) in rom.iter().zip(free_space) {
             *address = *byte;
         }
+    }
+
+    fn clear_memory(&mut self) {
+        let free_space = &mut self.memory[0x200..];
+        free_space.fill(0);
+    }
+
+    fn clear_screen(&mut self) {
+        self.screen.fill(0);
     }
 
     pub fn execute_instruction(&mut self) {
@@ -65,7 +90,7 @@ impl VirtualMachine {
             0x0000 => match opcode & 0x000F {
                 0x0000 => {
                     // 00E0: Clear display
-                    self.screen.iter_mut().for_each(|x| *x = 0);
+                    self.clear_screen();
                     self.program_counter += 2;
                 }
                 0x000E => {
