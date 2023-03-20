@@ -1,5 +1,23 @@
 use macroquad::input::KeyCode;
 
+pub const ACCEPTED_KEYS: [KeyCode; 16] = [
+    KeyCode::Key0,
+    KeyCode::Key1,
+    KeyCode::Key2,
+    KeyCode::Key3,
+    KeyCode::Key4,
+    KeyCode::Key5,
+    KeyCode::Key6,
+    KeyCode::Key7,
+    KeyCode::Key8,
+    KeyCode::Key9,
+    KeyCode::A,
+    KeyCode::B,
+    KeyCode::C,
+    KeyCode::D,
+    KeyCode::E,
+    KeyCode::F,
+];
 pub struct KeyValue(pub u8);
 
 impl TryFrom<KeyCode> for KeyValue {
