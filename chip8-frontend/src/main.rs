@@ -5,13 +5,22 @@ mod input_mapping;
 use input_mapping::{KeyValue, ACCEPTED_KEYS};
 
 const SCALE_FACTOR: u32 = 24;
-const WINDOW_SIZE: (f32, f32) = (
-    (chip8::SCREEN_WIDTH as f32) * SCALE_FACTOR as f32,
-    (chip8::SCREEN_HEIGHT as f32) * SCALE_FACTOR as f32,
+const WINDOW_SIZE: (i32, i32) = (
+    (chip8::SCREEN_WIDTH as i32) * SCALE_FACTOR as i32,
+    (chip8::SCREEN_HEIGHT as i32) * SCALE_FACTOR as i32,
 );
-const TARGET_FPS: u32 = 60;
-const INSTRUCTIONS_PER_SECOND: u32 = 700;
-const INSTRUCTIONS_PER_FRAME: u32 = INSTRUCTIONS_PER_SECOND / TARGET_FPS;
+const TARGET_FPS: u64 = 60;
+const INSTRUCTIONS_PER_SECOND: u64 = 700;
+const INSTRUCTIONS_PER_FRAME: u64 = INSTRUCTIONS_PER_SECOND / TARGET_FPS;
+
+fn window_conf() -> Conf {
+    Conf {
+        window_title: "Chip8rs".to_owned(),
+        window_width: WINDOW_SIZE.0,
+        window_height: WINDOW_SIZE.1,
+        ..Default::default()
+    }
+}
 
 fn handle_key_event(vm: &mut VirtualMachine, keycode: KeyCode, is_down: bool) {
     let value_result: Result<KeyValue, _> = KeyValue::try_from(keycode);
@@ -38,12 +47,34 @@ fn check_keys(vm: &mut VirtualMachine) {
     }
 }
 
-#[macroquad::main("Chip8")]
+#[macroquad::main(window_conf)]
 async fn main() {
-    let _vm = chip8::VirtualMachine::new();
+    let mut vm = chip8::VirtualMachine::new();
+    let rom = include_bytes!("../chip8-test-suite.ch8");
+    vm.load_rom(rom);
 
     loop {
         clear_background(BLACK);
+
+        check_keys(&mut vm);
+        for _ in 0..INSTRUCTIONS_PER_FRAME {
+            vm.execute_instruction();
+        }
+
+        // TODO: Ensure the timers are decremented 60 times a second
+        vm.decrement_timers();
+
+        for (y, row) in (0u32..).zip(vm.screen_rows()) {
+            for (x, _) in (0u32..).zip(row).filter(|(_, p)| **p != 0) {
+                draw_rectangle(
+                    (x * SCALE_FACTOR) as f32,
+                    (y * SCALE_FACTOR) as f32,
+                    SCALE_FACTOR as f32,
+                    SCALE_FACTOR as f32,
+                    WHITE,
+                );
+            }
+        }
 
         next_frame().await
     }
