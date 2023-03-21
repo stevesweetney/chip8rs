@@ -10,3 +10,4 @@ egui-macroquad = { version = "0.15.0", default-features = false }
 egui = "0.21.0"
 macroquad = "0.3.25"
 chip8 = { path = "../chip8" }
+rfd = "0.11.2"

@@ -2,6 +2,7 @@ use chip8::VirtualMachine;
 use egui::containers::{collapsing_header::CollapsingHeader, TopBottomPanel};
 use macroquad::prelude::*;
 
+mod file;
 mod input_mapping;
 use input_mapping::{KeyValue, ACCEPTED_KEYS};
 
@@ -67,6 +68,16 @@ async fn main() {
                             egui::widgets::Slider::new(&mut instructions_per_second, 400..=800)
                                 .text("Instructions Per Second");
                         ui.add(slider);
+
+                        if ui.button("Load Rom").clicked() {
+                            if let Some(path) = rfd::FileDialog::new().pick_file() {
+                                let maybe_bytes = file::path_to_bytes(path);
+
+                                if let Some(bytes) = maybe_bytes {
+                                    vm.load_rom(&bytes);
+                                }
+                            }
+                        }
                     });
                 });
         });
