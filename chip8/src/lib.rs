@@ -55,7 +55,7 @@ impl VirtualMachine {
 
     pub fn load_rom(&mut self, rom: &[u8]) {
         self.reset();
-        
+
         let free_space = &mut self.memory[0x200..];
         for (byte, address) in rom.iter().zip(free_space) {
             *address = *byte;

@@ -1,4 +1,5 @@
 use chip8::VirtualMachine;
+use egui::containers::{collapsing_header::CollapsingHeader, TopBottomPanel};
 use macroquad::prelude::*;
 
 mod input_mapping;
@@ -9,9 +10,8 @@ const WINDOW_SIZE: (i32, i32) = (
     (chip8::SCREEN_WIDTH as i32) * SCALE_FACTOR as i32,
     (chip8::SCREEN_HEIGHT as i32) * SCALE_FACTOR as i32,
 );
-const TARGET_FPS: u64 = 60;
-const INSTRUCTIONS_PER_SECOND: u64 = 700;
-const INSTRUCTIONS_PER_FRAME: u64 = INSTRUCTIONS_PER_SECOND / TARGET_FPS;
+const TARGET_FPS: u32 = 60;
+const DEFAULT_INSTRUCTIONS_PER_SECOND: u32 = 700;
 
 fn window_conf() -> Conf {
     Conf {
@@ -53,11 +53,26 @@ async fn main() {
     let rom = include_bytes!("../chip8-test-suite.ch8");
     vm.load_rom(rom);
 
+    let mut instructions_per_second = DEFAULT_INSTRUCTIONS_PER_SECOND;
+
     loop {
         clear_background(BLACK);
 
+        egui_macroquad::ui(|ctx| {
+            TopBottomPanel::bottom("Bottom Panel")
+                .resizable(false)
+                .show(ctx, |ui| {
+                    CollapsingHeader::new("Config").show(ui, |ui| {
+                        let slider =
+                            egui::widgets::Slider::new(&mut instructions_per_second, 400..=800)
+                                .text("Instructions Per Second");
+                        ui.add(slider);
+                    });
+                });
+        });
+
         check_keys(&mut vm);
-        for _ in 0..INSTRUCTIONS_PER_FRAME {
+        for _ in 0..(instructions_per_second / TARGET_FPS) {
             vm.execute_instruction();
         }
 
@@ -75,6 +90,7 @@ async fn main() {
                 );
             }
         }
+        egui_macroquad::draw();
 
         next_frame().await
     }
