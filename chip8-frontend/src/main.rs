@@ -1,9 +1,11 @@
 use chip8::VirtualMachine;
 use egui::containers::{collapsing_header::CollapsingHeader, TopBottomPanel};
-use macroquad::prelude::*;
+use macroquad::prelude::{coroutines::start_coroutine, *};
 
 mod file;
+mod future_util;
 mod input_mapping;
+use future_util::NoWakeFuture;
 use input_mapping::{KeyValue, ACCEPTED_KEYS};
 
 const SCALE_FACTOR: u32 = 24;
@@ -70,13 +72,19 @@ async fn main() {
                         ui.add(slider);
 
                         if ui.button("Load Rom").clicked() {
-                            if let Some(path) = rfd::FileDialog::new().pick_file() {
-                                let maybe_bytes = file::path_to_bytes(path);
+                            start_coroutine(async move {
+                                let boxed_fut = Box::pin(rfd::AsyncFileDialog::new().pick_file());
+                                let file_pick_fut = NoWakeFuture::new(boxed_fut);
 
-                                if let Some(bytes) = maybe_bytes {
-                                    vm.load_rom(&bytes);
+                                if let Some(file_handle) = file_pick_fut.await {
+                                    let read_fut = NoWakeFuture::new(Box::pin(async move {
+                                        file_handle.read().await
+                                    }));
+                                    let bytes = read_fut.await;
+
+                                    dbg!(bytes.len());
                                 }
-                            }
+                            });
                         }
                     });
                 });

@@ -171,6 +171,7 @@ dependencies = [
  "chip8",
  "egui",
  "egui-macroquad",
+ "futures-task",
  "macroquad",
  "rfd",
 ]
@@ -349,6 +350,12 @@ dependencies = [
  "hashbrown",
  "ttf-parser 0.15.2",
 ]
+
+[[package]]
+name = "futures-task"
+version = "0.3.27"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fd65540d33b37b16542a0438c12e6aeead10d4ac5d05bd3f805b8f35ab592879"
 
 [[package]]
 name = "gdk-pixbuf-sys"
