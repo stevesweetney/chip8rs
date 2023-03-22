@@ -2,7 +2,6 @@ use chip8::VirtualMachine;
 use egui::containers::{collapsing_header::CollapsingHeader, TopBottomPanel};
 use macroquad::prelude::{coroutines::start_coroutine, *};
 
-mod file;
 mod future_util;
 mod input_mapping;
 use future_util::NoWakeFuture;
