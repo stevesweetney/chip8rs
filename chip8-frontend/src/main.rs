@@ -1,6 +1,7 @@
 use chip8::VirtualMachine;
 use egui::containers::{collapsing_header::CollapsingHeader, TopBottomPanel};
 use macroquad::prelude::{coroutines::start_coroutine, *};
+use std::sync::{Arc, Mutex};
 
 mod future_util;
 mod input_mapping;
@@ -55,6 +56,8 @@ async fn main() {
     let rom = include_bytes!("../chip8-test-suite.ch8");
     vm.load_rom(rom);
 
+    let vm = Arc::new(Mutex::new(vm));
+
     let mut instructions_per_second = DEFAULT_INSTRUCTIONS_PER_SECOND;
 
     loop {
@@ -71,6 +74,7 @@ async fn main() {
                         ui.add(slider);
 
                         if ui.button("Load Rom").clicked() {
+                            let vm_clone = vm.clone();
                             start_coroutine(async move {
                                 let boxed_fut = Box::pin(rfd::AsyncFileDialog::new().pick_file());
                                 let file_pick_fut = NoWakeFuture::new(boxed_fut);
@@ -81,7 +85,7 @@ async fn main() {
                                     }));
                                     let bytes = read_fut.await;
 
-                                    dbg!(bytes.len());
+                                    vm_clone.lock().unwrap().load_rom(&bytes);
                                 }
                             });
                         }
@@ -89,15 +93,15 @@ async fn main() {
                 });
         });
 
-        check_keys(&mut vm);
+        check_keys(&mut vm.lock().unwrap());
         for _ in 0..(instructions_per_second / TARGET_FPS) {
-            vm.execute_instruction();
+            vm.lock().unwrap().execute_instruction();
         }
 
         // TODO: Ensure the timers are decremented 60 times a second
-        vm.decrement_timers();
+        vm.lock().unwrap().decrement_timers();
 
-        for (y, row) in (0u32..).zip(vm.screen_rows()) {
+        for (y, row) in (0u32..).zip(vm.lock().unwrap().screen_rows()) {
             for (x, _) in (0u32..).zip(row).filter(|(_, p)| **p != 0) {
                 draw_rectangle(
                     (x * SCALE_FACTOR) as f32,
