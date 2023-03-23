@@ -1,3 +1,9 @@
 [workspace]
 resolver = "2"
 members = ["chip8", "chip8-frontend"]
+
+[profile.release-small]
+inherits = "release"
+opt-level = "s"
+lto = true
+codegen-units = 1
