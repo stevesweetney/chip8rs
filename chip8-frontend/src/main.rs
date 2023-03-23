@@ -75,19 +75,18 @@ async fn main() {
 
                         if ui.button("Load Rom").clicked() {
                             let vm_clone = vm.clone();
-                            start_coroutine(async move {
-                                let boxed_fut = Box::pin(rfd::AsyncFileDialog::new().pick_file());
-                                let file_pick_fut = NoWakeFuture::new(boxed_fut);
-
-                                if let Some(file_handle) = file_pick_fut.await {
-                                    let read_fut = NoWakeFuture::new(Box::pin(async move {
-                                        file_handle.read().await
-                                    }));
-                                    let bytes = read_fut.await;
+                            let fut = async move {
+                                if let Some(file_handle) =
+                                    rfd::AsyncFileDialog::new().pick_file().await
+                                {
+                                    let bytes = file_handle.read().await;
 
                                     vm_clone.lock().unwrap().load_rom(&bytes);
                                 }
-                            });
+                            };
+
+                            let fut = NoWakeFuture::new(Box::pin(fut));
+                            start_coroutine(fut);
                         }
                     });
                 });
