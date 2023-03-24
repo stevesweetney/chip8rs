@@ -436,11 +436,9 @@ impl VirtualMachine {
                     let val = self.registers[register_x];
                     let i = self.index_register as usize;
 
-                    assert!(i + 2 <= self.memory.len());
-
-                    self.memory[i] = val / 100;
-                    self.memory[i + 1] = (val / 10) % 10;
                     self.memory[i + 2] = val % 10;
+                    self.memory[i + 1] = (val / 10) % 10;
+                    self.memory[i] = val / 100;
 
                     self.program_counter += 2;
                 }
@@ -451,7 +449,7 @@ impl VirtualMachine {
     }
 
     fn get_sprite_address(sprite_id: u8) -> u8 {
-        assert!(sprite_id <= 0x0F);
+        debug_assert!(sprite_id <= 0x0F);
 
         sprite_id * 5
     }
