@@ -1,8 +1,10 @@
 mod font;
+#[cfg(test)]
+mod test;
 
 pub const SCREEN_WIDTH: usize = 64;
 pub const SCREEN_HEIGHT: usize = 32;
-
+#[derive(Debug, PartialEq, Eq)]
 pub struct VirtualMachine {
     memory: [u8; 4096],
     registers: [u8; 16],
