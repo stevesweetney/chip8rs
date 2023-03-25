@@ -19,11 +19,11 @@ pub struct VirtualMachine {
 
 impl VirtualMachine {
     pub fn new() -> VirtualMachine {
-        let mut memory = [0; 4096];
+        let mut memory = [0_u8; 4096];
+        let font_space = &mut memory[0..font::FONTSET.len()];
 
-        for (i, &byte) in font::FONTSET.iter().enumerate() {
-            memory[i] = byte;
-        }
+        font_space.copy_from_slice(&font::FONTSET);
+
         VirtualMachine {
             memory: [0; 4096],
             registers: [0; 16],
