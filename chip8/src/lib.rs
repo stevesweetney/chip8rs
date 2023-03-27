@@ -65,7 +65,7 @@ impl VirtualMachine {
     }
 
     fn clear_memory(&mut self) {
-        (&mut self.memory[font::TOTAL_FONT_BYTES..]).fill(0);
+        self.memory[font::TOTAL_FONT_BYTES..].fill(0);
     }
 
     fn clear_screen(&mut self) {
@@ -488,5 +488,11 @@ impl VirtualMachine {
     pub fn decrement_timers(&mut self) {
         self.sound_timer = self.sound_timer.saturating_sub(1);
         self.delay_timer = self.delay_timer.saturating_sub(1);
+    }
+}
+
+impl Default for VirtualMachine {
+    fn default() -> Self {
+        Self::new()
     }
 }
