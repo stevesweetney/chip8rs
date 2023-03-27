@@ -1,6 +1,10 @@
 use chip8::VirtualMachine;
+#[cfg(feature = "profile")]
+use egui::containers::Window;
 use egui::containers::{collapsing_header::CollapsingHeader, TopBottomPanel};
 use macroquad::prelude::{coroutines::start_coroutine, *};
+#[cfg(feature = "profile")]
+use puffin_egui::puffin;
 use std::sync::{Arc, Mutex};
 
 mod future_util;
@@ -41,6 +45,8 @@ fn handle_key_event(vm: &mut VirtualMachine, keycode: KeyCode, is_down: bool) {
 }
 
 fn check_keys(vm: &mut VirtualMachine) {
+    #[cfg(feature = "profile")]
+    puffin::profile_function!();
     for keycode in ACCEPTED_KEYS {
         if is_key_down(keycode) {
             handle_key_event(vm, keycode, true);
@@ -52,6 +58,9 @@ fn check_keys(vm: &mut VirtualMachine) {
 
 #[macroquad::main(window_conf)]
 async fn main() {
+    #[cfg(feature = "profile")]
+    puffin::set_scopes_on(true);
+
     let mut vm = chip8::VirtualMachine::new();
     let rom = include_bytes!("../chip8-test-suite.ch8");
     vm.load_rom(rom);
@@ -61,6 +70,9 @@ async fn main() {
     let mut instructions_per_second = DEFAULT_INSTRUCTIONS_PER_SECOND;
 
     loop {
+        #[cfg(feature = "profile")]
+        puffin::GlobalProfiler::lock().new_frame();
+
         clear_background(BLACK);
 
         egui_macroquad::ui(|ctx| {
@@ -90,11 +102,21 @@ async fn main() {
                         }
                     });
                 });
+
+            #[cfg(feature = "profile")]
+            Window::new("Profiler").constrain(false).show(ctx, |ui| {
+                puffin_egui::profiler_ui(ui);
+            });
         });
 
         check_keys(&mut vm.lock().unwrap());
-        for _ in 0..(instructions_per_second / TARGET_FPS) {
-            vm.lock().unwrap().execute_instruction();
+
+        {
+            #[cfg(feature = "profile")]
+            puffin::profile_scope!("execute instruction");
+            for _ in 0..(instructions_per_second / TARGET_FPS) {
+                vm.lock().unwrap().execute_instruction();
+            }
         }
 
         // TODO: Ensure the timers are decremented 60 times a second
@@ -111,7 +133,12 @@ async fn main() {
                 );
             }
         }
-        egui_macroquad::draw();
+
+        {
+            #[cfg(feature = "profile")]
+            puffin::profile_scope!("draw");
+            egui_macroquad::draw();
+        }
 
         next_frame().await
     }
