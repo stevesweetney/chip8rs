@@ -1,4 +1,4 @@
-mod font;
+pub(self) mod font;
 #[cfg(test)]
 mod test;
 
@@ -22,12 +22,11 @@ pub struct VirtualMachine {
 impl VirtualMachine {
     pub fn new() -> VirtualMachine {
         let mut memory = [0_u8; 4096];
-        let font_space = &mut memory[0..font::FONTSET.len()];
 
-        font_space.copy_from_slice(&font::FONTSET);
+        font::copy_font_to_beginning(&mut memory);
 
         VirtualMachine {
-            memory: [0; 4096],
+            memory,
             registers: [0; 16],
             stack: [0; 16],
             stack_pointer: 0,
@@ -65,8 +64,7 @@ impl VirtualMachine {
     }
 
     fn clear_memory(&mut self) {
-        let free_space = &mut self.memory[0x200..];
-        free_space.fill(0);
+        (&mut self.memory[font::TOTAL_FONT_BYTES..]).fill(0);
     }
 
     fn clear_screen(&mut self) {

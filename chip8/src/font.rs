@@ -1,4 +1,6 @@
-pub(super) static FONTSET: [u8; 16 * 5] = [
+pub(super) const TOTAL_FONT_BYTES: usize = 80;
+
+static FONTSET: [u8; 80] = [
     0xF0, 0x90, 0x90, 0x90, 0xF0, // 0
     0x20, 0x60, 0x20, 0x20, 0x70, // 1
     0xF0, 0x10, 0xF0, 0x80, 0xF0, // 2
@@ -16,3 +18,9 @@ pub(super) static FONTSET: [u8; 16 * 5] = [
     0xF0, 0x80, 0xF0, 0x80, 0xF0, // E
     0xF0, 0x80, 0xF0, 0x80, 0x80, // F
 ];
+
+pub(super) fn copy_font_to_beginning(data: &mut [u8]) {
+    data.iter_mut()
+        .zip(&FONTSET)
+        .for_each(|(addr, byte)| *addr = *byte);
+}
