@@ -4,6 +4,7 @@ mod test;
 
 pub const SCREEN_WIDTH: usize = 64;
 pub const SCREEN_HEIGHT: usize = 32;
+pub const PROGAM_COUNTER_START: u16 = 0x200;
 #[derive(Debug, PartialEq, Eq)]
 pub struct VirtualMachine {
     memory: [u8; 4096],
@@ -32,7 +33,7 @@ impl VirtualMachine {
             stack_pointer: 0,
             screen: [0; SCREEN_HEIGHT * SCREEN_WIDTH],
             index_register: 0,
-            program_counter: 0x200,
+            program_counter: PROGAM_COUNTER_START,
             delay_timer: 0,
             sound_timer: 0,
             key_state: [false; 16],
@@ -47,7 +48,7 @@ impl VirtualMachine {
         self.blocked_on_key_press = false;
         self.delay_timer = 0;
         self.sound_timer = 0;
-        self.program_counter = 0x200;
+        self.program_counter = PROGAM_COUNTER_START;
         self.index_register = 0;
         self.stack_pointer = 0;
         self.stack.fill(0);
@@ -57,7 +58,7 @@ impl VirtualMachine {
     pub fn load_rom(&mut self, rom: &[u8]) {
         self.reset();
 
-        let free_space = &mut self.memory[0x200..];
+        let free_space = &mut self.memory[(PROGAM_COUNTER_START as usize)..];
         for (byte, address) in rom.iter().zip(free_space) {
             *address = *byte;
         }
