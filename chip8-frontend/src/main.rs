@@ -62,7 +62,7 @@ async fn main() {
     puffin::set_scopes_on(true);
 
     let mut vm = chip8::VirtualMachine::new();
-    let rom = include_bytes!("../chip8-test-suite.ch8");
+    let rom = include_bytes!("../../assets/chip8-test-suite.ch8");
     vm.load_rom(rom);
 
     let vm = Arc::new(Mutex::new(vm));
