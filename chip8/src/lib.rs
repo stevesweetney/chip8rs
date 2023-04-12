@@ -53,6 +53,7 @@ impl VirtualMachine {
         self.stack_pointer = 0;
         self.stack.fill(0);
         self.registers.fill(0);
+        font::copy_font_to_beginning(&mut self.memory);
     }
 
     pub fn load_rom(&mut self, rom: &[u8]) {

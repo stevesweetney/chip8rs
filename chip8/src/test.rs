@@ -32,7 +32,6 @@ prop_compose! {
 proptest! {
     #[test]
     fn test_reset(mut vm in arb_vm()) {
-        font::copy_font_to_beginning(&mut vm.memory);
         vm.reset();
         assert_eq!(vm, VirtualMachine::new());
     }
