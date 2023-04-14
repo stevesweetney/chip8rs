@@ -211,7 +211,6 @@ impl VirtualMachine {
                         self.registers[0xF] = 0;
                     }
 
-
                     self.program_counter += 2;
                 }
                 0x5 => {
@@ -227,15 +226,14 @@ impl VirtualMachine {
                         self.registers[0xF] = 0;
                     }
 
-
                     self.program_counter += 2;
                 }
                 0x6 => {
                     // 8XY6
 
-                    let vx = self.registers[Self::get_register_x(opcode)];
-                    self.registers[Self::get_register_x(opcode)] = vx.wrapping_shr(1);
-                    self.registers[0xF] = vx & 1;
+                    let vy = self.registers[Self::get_register_y(opcode)]; // shift quirk, TODO: make configurable
+                    self.registers[Self::get_register_x(opcode)] = vy.wrapping_shr(1);
+                    self.registers[0xF] = vy & 1;
 
                     self.program_counter += 2;
                 }
@@ -251,15 +249,14 @@ impl VirtualMachine {
                         self.registers[0xF] = 0;
                     }
 
-
                     self.program_counter += 2;
                 }
                 0xE => {
                     // 8XYE
 
-                    let vx = self.registers[Self::get_register_x(opcode)];
-                    self.registers[Self::get_register_x(opcode)] = vx.wrapping_shl(1);
-                    self.registers[0xF] = (vx >> 7) & 1;
+                    let vy = self.registers[Self::get_register_y(opcode)]; // shift quirk, TODO: make configurable
+                    self.registers[Self::get_register_x(opcode)] = vy.wrapping_shl(1);
+                    self.registers[0xF] = (vy >> 7) & 1;
 
                     self.program_counter += 2;
                 }
@@ -396,6 +393,8 @@ impl VirtualMachine {
                             *mem = self.registers[idx];
                         }
 
+                        self.index_register += (register_x + 1) as u16; // Memory quirk, TODO: Make Configurable
+
                         self.program_counter += 2;
                     }
                     0x0060 => {
@@ -405,6 +404,8 @@ impl VirtualMachine {
                         for (idx, mem) in self.memory[i..=(i + register_x)].iter().enumerate() {
                             self.registers[idx] = *mem;
                         }
+
+                        self.index_register += (register_x + 1) as u16; // Memory quirk, TODO: Make Configurable
 
                         self.program_counter += 2;
                     }
