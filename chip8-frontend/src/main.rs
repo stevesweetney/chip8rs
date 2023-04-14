@@ -18,7 +18,7 @@ const WINDOW_SIZE: (i32, i32) = (
     (chip8::SCREEN_HEIGHT as i32) * SCALE_FACTOR as i32,
 );
 const TARGET_FPS: u32 = 60;
-const DEFAULT_INSTRUCTIONS_PER_SECOND: u32 = 700;
+const DEFAULT_INSTRUCTIONS_PER_FRAME: u32 = 20;
 const TARGET_MS_PER_FRAME: f64 = 1.0 / TARGET_FPS as f64;
 
 fn window_conf() -> Conf {
@@ -68,7 +68,7 @@ async fn main() {
 
     let vm = Arc::new(Mutex::new(vm));
 
-    let mut instructions_per_second = DEFAULT_INSTRUCTIONS_PER_SECOND;
+    let mut instructions_per_frame = DEFAULT_INSTRUCTIONS_PER_FRAME;
     let mut previous = get_time();
     let mut lag = 0.0;
 
@@ -90,7 +90,7 @@ async fn main() {
             let mut v = vm.lock().unwrap();
             while lag >= TARGET_MS_PER_FRAME {
                 lag -= TARGET_MS_PER_FRAME;
-                for _ in 0..(instructions_per_second / TARGET_FPS) {
+                for _ in 0..instructions_per_frame {
                     v.execute_instruction();
                 }
 
@@ -106,8 +106,8 @@ async fn main() {
                 .show(ctx, |ui| {
                     CollapsingHeader::new("Config").show(ui, |ui| {
                         let slider =
-                            egui::widgets::Slider::new(&mut instructions_per_second, 400..=800)
-                                .text("Instructions Per Second");
+                            egui::widgets::Slider::new(&mut instructions_per_frame, 5..=500)
+                                .text("Instructions Per Frame");
                         ui.add(slider);
 
                         if ui.button("Load Rom").clicked() {
