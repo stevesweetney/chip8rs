@@ -19,6 +19,7 @@ const WINDOW_SIZE: (i32, i32) = (
 );
 const TARGET_FPS: u32 = 60;
 const DEFAULT_INSTRUCTIONS_PER_SECOND: u32 = 700;
+const TARGET_MS_PER_FRAME: f64 = 1.0 / TARGET_FPS as f64;
 
 fn window_conf() -> Conf {
     Conf {
@@ -68,10 +69,34 @@ async fn main() {
     let vm = Arc::new(Mutex::new(vm));
 
     let mut instructions_per_second = DEFAULT_INSTRUCTIONS_PER_SECOND;
+    let mut previous = get_time();
+    let mut lag = 0.0;
 
     loop {
         #[cfg(feature = "profile")]
         puffin::GlobalProfiler::lock().new_frame();
+
+        let current = get_time();
+        let elapsed = current - previous;
+        previous = current;
+        lag += elapsed;
+
+        check_keys(&mut vm.lock().unwrap());
+
+        {
+            #[cfg(feature = "profile")]
+            puffin::profile_scope!("Update");
+
+            let mut v = vm.lock().unwrap();
+            while lag >= TARGET_MS_PER_FRAME {
+                lag -= TARGET_MS_PER_FRAME;
+                for _ in 0..(instructions_per_second / TARGET_FPS) {
+                    v.execute_instruction();
+                }
+
+                v.decrement_timers();
+            }
+        }
 
         clear_background(BLACK);
 
@@ -109,19 +134,6 @@ async fn main() {
             });
         });
 
-        check_keys(&mut vm.lock().unwrap());
-
-        {
-            #[cfg(feature = "profile")]
-            puffin::profile_scope!("execute instruction");
-            for _ in 0..(instructions_per_second / TARGET_FPS) {
-                vm.lock().unwrap().execute_instruction();
-            }
-        }
-
-        // TODO: Ensure the timers are decremented 60 times a second
-        vm.lock().unwrap().decrement_timers();
-
         for (y, row) in (0u32..).zip(vm.lock().unwrap().screen_rows()) {
             for (x, _) in (0u32..).zip(row).filter(|(_, p)| **p != 0) {
                 draw_rectangle(
@@ -140,6 +152,6 @@ async fn main() {
             egui_macroquad::draw();
         }
 
-        next_frame().await
+        next_frame().await;
     }
 }
