@@ -203,6 +203,7 @@ impl VirtualMachine {
                     let vx = self.registers[Self::get_register_x(opcode)];
                     let vy = self.registers[Self::get_register_y(opcode)];
                     let (sum, did_overflow) = vx.overflowing_add(vy);
+                    self.registers[Self::get_register_x(opcode)] = sum;
 
                     if did_overflow {
                         self.registers[0xF] = 1;
@@ -210,7 +211,6 @@ impl VirtualMachine {
                         self.registers[0xF] = 0;
                     }
 
-                    self.registers[Self::get_register_x(opcode)] = sum;
 
                     self.program_counter += 2;
                 }
@@ -219,6 +219,7 @@ impl VirtualMachine {
 
                     let vx = self.registers[Self::get_register_x(opcode)];
                     let vy = self.registers[Self::get_register_y(opcode)];
+                    self.registers[Self::get_register_x(opcode)] = vx.wrapping_sub(vy);
 
                     if vx > vy {
                         self.registers[0xF] = 1;
@@ -226,7 +227,6 @@ impl VirtualMachine {
                         self.registers[0xF] = 0;
                     }
 
-                    self.registers[Self::get_register_x(opcode)] = vx.wrapping_sub(vy);
 
                     self.program_counter += 2;
                 }
@@ -243,6 +243,7 @@ impl VirtualMachine {
                     // 8XY7
                     let vx = self.registers[Self::get_register_x(opcode)];
                     let vy = self.registers[Self::get_register_y(opcode)];
+                    self.registers[Self::get_register_x(opcode)] = vy.wrapping_sub(vx);
 
                     if vy >= vx {
                         self.registers[0xF] = 1;
@@ -250,7 +251,6 @@ impl VirtualMachine {
                         self.registers[0xF] = 0;
                     }
 
-                    self.registers[Self::get_register_x(opcode)] = vy.wrapping_sub(vx);
 
                     self.program_counter += 2;
                 }
