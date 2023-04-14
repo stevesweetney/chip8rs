@@ -244,7 +244,7 @@ impl VirtualMachine {
                     let vx = self.registers[Self::get_register_x(opcode)];
                     let vy = self.registers[Self::get_register_y(opcode)];
 
-                    if vy > vx {
+                    if vy >= vx {
                         self.registers[0xF] = 1;
                     } else {
                         self.registers[0xF] = 0;
