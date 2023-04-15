@@ -3,7 +3,7 @@ $ErrorActionPreference = "Stop"
 
 # Define variables
 $target = "wasm32-unknown-unknown"
-$outDir = "dist"
+$outDir = "root"
 
 # Build the Rust project
 cargo build --target $target --profile release-small
