@@ -10,7 +10,7 @@ use std::sync::{Arc, Mutex};
 mod future_util;
 mod input_mapping;
 use future_util::NoWakeFuture;
-use input_mapping::{KeyValue, ACCEPTED_KEYS};
+use input_mapping::{KeyValue, ACCEPTED_KEYS, KEYS_LABEL};
 
 const SCALE_FACTOR: u32 = 24;
 const WINDOW_SIZE: (i32, i32) = (
@@ -125,6 +125,8 @@ async fn main() {
                             let fut = NoWakeFuture::new(Box::pin(fut));
                             start_coroutine(fut);
                         }
+
+                        ui.label(KEYS_LABEL)
                     });
                 });
 

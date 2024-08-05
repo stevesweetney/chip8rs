@@ -1,5 +1,17 @@
 use macroquad::input::KeyCode;
 
+
+pub const KEYS_LABEL: &str = "Accepted Keys
++-+-+-+-+
+|1|2|3|4|
++-+-+-+-+
+|Q|W|E|R|
++-+-+-+-+
+|A|S|D|F|
++-+-+-+-+
+|Z|X|C|V|
++-+-+-+-+";
+
 pub const ACCEPTED_KEYS: [KeyCode; 16] = [
     KeyCode::Key1,
     KeyCode::Key2,
